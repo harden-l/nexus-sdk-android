@@ -80,7 +80,8 @@ CoreUserSDK.init(
         productName = "TEST PRODUCT",
         apiBaseUrl = "https://serverlf.stoahayaamhsothy.com/",
         encrypt = false,
-        debug = true
+        debug = true,
+        gt = 1
     )
 )
 ```
@@ -102,6 +103,21 @@ CoreUserSDK.init(
 ```
 
 `gt` 为登录接口注册赠送梯度码，非必填。不需要注册赠送时保持默认 `null`，SDK 不会在登录请求中携带 `gt`。
+
+`CoreUserConfig` 字段说明：
+
+| 字段 | 是否必填 | 说明 |
+| --- | --- | --- |
+| `productId` | 是 | 后台产品 ID；接口 Header 中的 `ProductId`。 |
+| `productName` | 是 | 产品名称；接口 Header 中的 `Product`。 |
+| `apiBaseUrl` | 是 | Nexus 后台接口域名。 |
+| `version` | 否 | App 版本号；默认读取当前 App 版本，读取失败时为 `1.0.0`。 |
+| `country` | 否 | 国家/地区；不传时 SDK 自动使用设备 Locale。 |
+| `language` | 否 | 语言；不传时 SDK 自动使用设备 Locale。 |
+| `encrypt` | 否 | 是否加密非登录接口，默认 `true`；登录接口固定不加密。 |
+| `encryptionKey` | `encrypt=true` 时必填 | 当前产品的 32 字节 AES key。 |
+| `debug` | 否 | 是否输出 SDK debug log，默认 `false`。 |
+| `gt` | 否 | 登录注册赠送梯度码：`1` 赠送 10，`2` 赠送 20，`3` 赠送 30，其它值不赠送；不传时登录请求不携带。 |
 
 ### 4.4 登录
 ```kotlin
