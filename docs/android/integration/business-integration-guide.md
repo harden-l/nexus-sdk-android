@@ -177,12 +177,15 @@ CoreUserSDK.silentLoginAsync { result ->
 ```kotlin
 CoreUserSDK.fetchUserInfoAsync { result ->
     result.onSuccess { user ->
+        // user.balance 为当前用户余额
         if (!user.emailBound) {
             // 可展示绑定入口
         }
     }
 }
 ```
+
+`fetchUserInfoAsync()` 会请求 `/m/v7/user/info`，返回用户资料和当前余额 `balance`，并刷新 SDK 本地用户缓存。业务方展示金币余额或扣金币后刷新余额时，可以读取返回的 `user.balance`。
 
 使用 SDK 内置邮箱绑定弹窗：
 
