@@ -18,7 +18,7 @@
 | --- | --- |
 | `productId` | 后台产品 ID；接口 Header 中的 `ProductId`。 |
 | `productName` | 接口 Header `Product`。 |
-| `apiBaseUrl` | 接口域名。 |
+| `apiBaseUrl` | 接口域名；测试环境使用 `https://serverlf.stoahayaamhsothy.com/`，生产环境使用 `https://www.crypsiscollectiveinc.com/`。 |
 | `encryptionKey` | 生产环境必填，32 字节 AES key。 |
 | AdMob App ID / Ad Unit ID | 仅广告模块需要。 |
 | Firebase 配置 | 仅 Firebase 事件需要，业务 App 需要按 Firebase 官方方式接入真实配置。 |
@@ -94,7 +94,7 @@ CoreUserSDK.init(
     CoreUserConfig(
         productId = "7",
         productName = "TEST PRODUCT",
-        apiBaseUrl = "https://serverlf.stoahayaamhsothy.com/",
+        apiBaseUrl = "https://www.crypsiscollectiveinc.com/",
         encrypt = true,
         encryptionKey = "32-byte-product-encryption-key",
         gt = 1
@@ -110,7 +110,7 @@ CoreUserSDK.init(
 | --- | --- | --- |
 | `productId` | 是 | 后台产品 ID；接口 Header 中的 `ProductId`。 |
 | `productName` | 是 | 产品名称；接口 Header 中的 `Product`。 |
-| `apiBaseUrl` | 是 | Nexus 后台接口域名。 |
+| `apiBaseUrl` | 是 | Nexus 后台接口域名；测试环境使用 `https://serverlf.stoahayaamhsothy.com/`，生产环境使用 `https://www.crypsiscollectiveinc.com/`。 |
 | `version` | 否 | App 版本号；默认读取当前 App 版本，读取失败时为 `1.0.0`。 |
 | `country` | 否 | 国家/地区；不传时 SDK 自动使用设备 Locale。 |
 | `language` | 否 | 语言；不传时 SDK 自动使用设备 Locale。 |
