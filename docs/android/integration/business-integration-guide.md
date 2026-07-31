@@ -1,15 +1,15 @@
 # Nexus SDK Android 业务接入说明
 本文面向接入 Nexus SDK 的业务 App。SDK按模块提供能力，可根据需求接入其中1个或多个模块。
 
-当前版本：`0.0.3`
+当前版本：`0.0.4`
 
 ## 1. 模块选择
 | 模块 | AAR | 适用场景 | 前置依赖 |
 | --- | --- | --- | --- |
-| CoreUserSDK | [nexus-core-user-0.0.3.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.3/nexus-core-user-0.0.3.aar) | 设备 ID、静默登录、用户信息、邮箱绑定 | 无 |
-| GrowthAnalyticsAdSDK | [nexus-growth-analytics-ad-0.0.3.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.3/nexus-growth-analytics-ad-0.0.3.aar) | BI/Firebase/AppsFlyer 事件、AdMob 广告、归因 | 建议接入 CoreUserSDK，用于 uid/deviceId |
-| PaymentSDK | [nexus-payment-0.0.3.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.3/nexus-payment-0.0.3.aar) | 商品、订阅页、Google Play Billing、订单校验、权益 | 必须先初始化 CoreUserSDK |
-| CrossPromoSDK | [nexus-cross-promo-0.0.3.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.3/nexus-cross-promo-0.0.3.aar) | 应用互导推荐页、Deep Link、导量归因 | 必须先初始化 CoreUserSDK；如需事件上报，建议接入 GrowthAnalyticsAdSDK |
+| CoreUserSDK | [nexus-core-user-0.0.4.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.4/nexus-core-user-0.0.4.aar) | 设备 ID、静默登录、用户信息、邮箱绑定 | 无 |
+| GrowthAnalyticsAdSDK | [nexus-growth-analytics-ad-0.0.4.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.4/nexus-growth-analytics-ad-0.0.4.aar) | BI/Firebase/AppsFlyer 事件、AdMob 广告、归因 | 建议接入 CoreUserSDK，用于 uid/deviceId |
+| PaymentSDK | [nexus-payment-0.0.4.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.4/nexus-payment-0.0.4.aar) | 商品、订阅页、Google Play Billing、订单校验、权益 | 必须先初始化 CoreUserSDK |
+| CrossPromoSDK | [nexus-cross-promo-0.0.4.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.4/nexus-cross-promo-0.0.4.aar) | 应用互导推荐页、Deep Link、导量归因 | 必须先初始化 CoreUserSDK；如需事件上报，建议接入 GrowthAnalyticsAdSDK |
 
 ## 2. 通用准备
 请按实际接入模块向后台或 SDK 提供方确认配置：
@@ -18,6 +18,7 @@
 | --- | --- |
 | `productId` | 后台产品 ID；接口 Header 中的 `ProductId`。 |
 | `productName` | 接口 Header `Product`。 |
+| `accountName` | Google Play 开发者账号名称；默认 `test` 仅供测试，生产上线前必须替换为真实值。 |
 | `apiBaseUrl` | 接口域名；测试环境使用 `https://serverlf.stoahayaamhsothy.com/`，生产环境使用 `https://v8b.crypsiscollectiveinc.com`。 |
 | `encryptionKey` | 生产环境必填，32 字节 AES key。 |
 | AdMob App ID / Ad Unit ID | 仅广告模块需要。 |
@@ -31,7 +32,6 @@
 
 - `CoreUserConfig.encrypt` 默认是 `true`。
 - `encrypt = true` 时必须传 `encryptionKey`。
-- 登录接口 `/m/v7/user/login` 固定不加密。
 - `gt` 为登录注册赠送梯度码，默认不传。
 - 其它接口按 `encrypt` 配置加密请求并解密响应。
 - 同步网络 API 不能在主线程调用；业务侧优先使用异步 API。
@@ -78,8 +78,10 @@ CoreUserSDK.init(
     CoreUserConfig(
         productId = "7",
         productName = "TEST PRODUCT",
+        accountName = "test",
         apiBaseUrl = "https://serverlf.stoahayaamhsothy.com/",
         encrypt = false,
+        encryptionKey = "1b8df48c1fa64ce28a2e8133dffe600c",
         debug = true,
         gt = 1
     )
@@ -94,6 +96,7 @@ CoreUserSDK.init(
     CoreUserConfig(
         productId = "7",
         productName = "TEST PRODUCT",
+        accountName = "real-google-play-account-name",
         apiBaseUrl = "https://v8b.crypsiscollectiveinc.com",
         encrypt = true,
         encryptionKey = "32-byte-product-encryption-key",
@@ -102,14 +105,13 @@ CoreUserSDK.init(
 )
 ```
 
-`gt` 为登录接口注册赠送梯度码，非必填。不需要注册赠送时保持默认 `null`，SDK 不会在登录请求中携带 `gt`。
-
 `CoreUserConfig` 字段说明：
 
 | 字段 | 是否必填 | 说明 |
 | --- | --- | --- |
 | `productId` | 是 | 后台产品 ID；接口 Header 中的 `ProductId`。 |
 | `productName` | 是 | 产品名称；接口 Header 中的 `Product`。 |
+| `accountName` | 否 | 默认 `test`，仅供测试；`apiBaseUrl + /related_products` 接口使用它查询同账号应用，生产上线前必须设置真实的 Google Play 开发者账号名称。 |
 | `apiBaseUrl` | 是 | Nexus 后台接口域名；测试环境使用 `https://serverlf.stoahayaamhsothy.com/`，生产环境使用 `https://v8b.crypsiscollectiveinc.com`。 |
 | `version` | 否 | App 版本号；默认读取当前 App 版本，读取失败时为 `1.0.0`。 |
 | `country` | 否 | 国家/地区；不传时 SDK 自动使用设备 Locale。 |
@@ -117,7 +119,7 @@ CoreUserSDK.init(
 | `encrypt` | 否 | 是否加密非登录接口，默认 `true`；登录接口固定不加密。 |
 | `encryptionKey` | `encrypt=true` 时必填 | 当前产品的 32 字节 AES key。 |
 | `debug` | 否 | 是否输出 SDK debug log，默认 `false`。 |
-| `gt` | 否 | 登录注册赠送梯度码：`1` 赠送 10，`2` 赠送 20，`3` 赠送 30，其它值不赠送；不传时登录请求不携带。 |
+| `gt` | 否 | 登录注册赠送梯度码：`1` 赠送 10，`2` 赠送 20，`3` 赠送 30，其它值不赠送；不传时登录请求不携带。仅本次首次创建用户且新建共享钱包时生效 |
 
 ### 4.4 登录
 ```kotlin
@@ -151,6 +153,8 @@ val user = CoreUserSDK.silentLogin(LoginType.GUEST)
 
 默认使用 `LoginType.GUEST`。登录请求会携带本地已有 uid；首次登录时 uid 为空字符串。
 
+登录后SDK会拉取一次用户信息。
+
 ### 4.5 获取登录动态配置
 ```kotlin
 val loginConfig = CoreUserSDK.getConfig()
@@ -170,8 +174,21 @@ CoreUserSDK.silentLoginAsync { result ->
 说明：
 
 - 首次登录成功前调用时可能返回空 Map。
-- `logout()` 会清空本地保存的登录动态配置和用户资料缓存，但保留 uid，下一次登录请求仍会携带该 uid。
+- `logout()` 会先调用 `POST /m/v7/coins/deregister` 注销接口，成功后清空本地保存的登录动态配置和用户资料缓存，但保留 uid，下一次登录请求仍会携带该 uid。
 - `getConfig()` 返回的是登录动态配置，不是 `/m/v7/user/info` 的用户信息。
+
+退出登录示例：
+
+```kotlin
+CoreUserSDK.logoutAsync { result ->
+    if (result.isSuccess) {
+        // 退出成功
+    } else {
+        val error = result.exceptionOrNull()
+        // 注销接口失败，本地用户缓存不会被清理
+    }
+}
+```
 
 ### 4.6 用户信息和邮箱绑定
 ```kotlin
