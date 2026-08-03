@@ -1,15 +1,15 @@
 # Nexus SDK Android 业务接入说明
 本文面向接入 Nexus SDK 的业务 App。SDK按模块提供能力，可根据需求接入其中1个或多个模块。
 
-当前版本：`0.0.5`
+当前版本：`0.0.6`
 
 ## 1. 模块选择
 | 模块 | AAR | 适用场景 | 前置依赖 |
 | --- | --- | --- | --- |
-| CoreUserSDK | [nexus-core-user-0.0.5.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.5/nexus-core-user-0.0.5.aar) | 设备 ID、静默登录、用户信息、邮箱绑定、余额和金币 | 无 |
-| GrowthAnalyticsAdSDK | [nexus-growth-analytics-ad-0.0.5.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.5/nexus-growth-analytics-ad-0.0.5.aar) | BI/Firebase/AppsFlyer 事件、AdMob 广告、归因 | CoreUserSDK |
-| PaymentSDK | [nexus-payment-0.0.5.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.5/nexus-payment-0.0.5.aar) | 商品、订阅页、Google Play Billing、订单校验、权益 | CoreUserSDK、GrowthAnalyticsAdSDK |
-| CrossPromoSDK | [nexus-cross-promo-0.0.5.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.5/nexus-cross-promo-0.0.5.aar) | 应用互导推荐页、Deep Link、导量归因 | CoreUserSDK、GrowthAnalyticsAdSDK |
+| CoreUserSDK | [nexus-core-user-0.0.6.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.6/nexus-core-user-0.0.6.aar) | 设备 ID、静默登录、用户信息、邮箱绑定、余额和金币 | 无 |
+| GrowthAnalyticsAdSDK | [nexus-growth-analytics-ad-0.0.6.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.6/nexus-growth-analytics-ad-0.0.6.aar) | BI/Firebase/AppsFlyer 事件、AdMob 广告、归因 | CoreUserSDK |
+| PaymentSDK | [nexus-payment-0.0.6.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.6/nexus-payment-0.0.6.aar) | 商品、订阅页、Google Play Billing、订单校验、权益 | CoreUserSDK、GrowthAnalyticsAdSDK |
+| CrossPromoSDK | [nexus-cross-promo-0.0.6.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.6/nexus-cross-promo-0.0.6.aar) | 应用互导推荐页、Deep Link、导量归因 | CoreUserSDK、GrowthAnalyticsAdSDK |
 
 ## 2. 通用准备
 请按实际接入模块向后台或 SDK 提供方确认配置：
@@ -22,8 +22,9 @@
 | `apiBaseUrl` | 接口域名；测试环境使用 `https://serverlf.stoahayaamhsothy.com/`，生产环境使用 `https://v8b.crypsiscollectiveinc.com`。 |
 | `encryptionKey` | 生产环境必填，32 字节 AES key。 |
 | AdMob App ID / Ad Unit ID | 仅广告模块需要。 |
-| Firebase 配置 | 仅 Firebase 事件需要，业务 App 需要按 Firebase 官方方式接入真实配置。 |
+| Firebase 配置 | 仅 Firebase 事件需要；业务 App 必须应用 Google Services 插件，并提供真实 `google-services.json`。 |
 | AppsFlyer Dev Key | 仅 AppsFlyer 事件需要。 |
+| DataEye App ID / Server URL | 仅 BI(DataEye) 事件需要；Server URL 不传时使用 DataEye 默认地址。 |
 | `gt` | 登录注册赠送梯度码，非必填：`1` 赠送 10，`2` 赠送 20，`3` 赠送 30，其它值不赠送。 |
 | Google Play 商品 ID | 仅支付模块需要。 |
 | Deep Link Scheme | 仅 CrossPromo 或归因 Deep Link 需要。 |
@@ -60,6 +61,7 @@ dependencies {
 ```kotlin
 dependencies {
     // GrowthAnalyticsAdSDK
+    // 只添加业务 App 实际启用的平台依赖
     implementation("com.google.android.gms:play-services-ads:25.3.0")
     implementation("com.google.firebase:firebase-analytics:23.0.0")
     implementation("com.appsflyer:af-android-sdk:6.17.5")
@@ -71,6 +73,25 @@ dependencies {
 ```
 
 只接入 CoreUserSDK 时无需添加上述第三方依赖。接入 PaymentSDK 或 CrossPromoSDK 时，必须同时添加其前置 AAR。
+
+启用 Firebase 时，还需要在业务工程根 Gradle 配置中声明 Google Services 插件版本：
+
+```kotlin
+plugins {
+    id("com.google.gms.google-services") version "4.4.4" apply false
+}
+```
+
+然后在业务 App module 的 `build.gradle.kts` 中应用插件：
+
+```kotlin
+plugins {
+    id("com.android.application")
+    id("com.google.gms.google-services")
+}
+```
+
+如果业务工程仍使用 `buildscript` 方式，则在根工程加入 `classpath("com.google.gms:google-services:4.4.4")`，并在 App module 使用 `apply(plugin = "com.google.gms.google-services")`。Google Services 插件只能由宿主 App 应用，不能打进 SDK AAR。
 
 ## 4. CoreUserSDK 接入
 ### 4.1 初始化
@@ -208,7 +229,7 @@ CoreUserSDK.fetchUserInfoAsync { result ->
 }
 ```
 
-`fetchUserInfoAsync()` 返回用户资料和当前余额 `balance`，并刷新 SDK 本地用户缓存。业务方展示金币余额或扣金币后刷新余额时，可以读取返回的 `user.balance`。
+`fetchUserInfoAsync()` 返回用户资料和当前余额 `balance`，并刷新 SDK 本地用户缓存。`SDKUser.balance` 类型为 `Double`，支持小数余额；业务方展示金币余额或扣金币后刷新余额时，可以读取返回的 `user.balance`。
 
 使用 SDK 内置邮箱绑定弹窗：
 
@@ -242,7 +263,54 @@ CoreUserSDK.consumeChatCoinsAsync(
 - 扣除成功后 SDK 不直接修改本地 `SDKUser.balance` 缓存；业务方如需刷新余额，调用 `fetchUserInfoAsync()`。
 
 ## 5. GrowthAnalyticsAdSDK 接入
-### 5.1 AndroidManifest
+### 5.1 第三方平台配置
+
+Firebase、AppsFlyer 和 DataEye 可以独立启用，也可以同时启用。`AnalyticsConfig` 中三个开关默认均为 `true`，业务方应显式关闭未使用的平台，避免误以为事件已经真实上报。
+
+| 平台 | 必须配置 | `AnalyticsConfig` | 未完整配置时的行为 |
+| --- | --- | --- | --- |
+| Firebase | `firebase-analytics` 依赖、Google Services 插件、与包名匹配的 `google-services.json` | `enableFirebase = true` | Firebase 初始化会依赖宿主 App 配置；SDK 不内置 Firebase 配置文件。 |
+| AppsFlyer | `af-android-sdk` 依赖、业务 App 的 Dev Key；归因场景再配置 OneLink/App Links | `enableAppsflyer = true`、`appsflyerDevKey = "<DEV_KEY>"` | Dev Key 为空时 SDK 使用 Mock Provider，不会向 AppsFlyer 发送数据。 |
+| DataEye | `dataeye-android-sdk` 依赖、DataEye App ID；自定义上报域名时再提供 Server URL | `enableBI = true`、`dataEyeAppId = "<APP_ID>"`、可选 `dataEyeServerUrl` | App ID 为空时 SDK 使用 Mock Provider，不会向 DataEye 发送数据。 |
+
+生产环境必须调用带 `Context` 的 `GrowthAnalyticsAdSDK.init(context, config, activityProvider)`，该重载才会根据上述配置创建真实 Provider。只接入一个平台时，将另外两个平台的开关设置为 `false`。
+
+#### Firebase
+
+将 Firebase Console 下载的 `google-services.json` 放到业务 App module 根目录，并在业务 App 的 Gradle 配置中启用 Google Services 插件：
+
+```kotlin
+plugins {
+    id("com.google.gms.google-services")
+}
+```
+
+Firebase Console 中 Android App 的包名必须与业务 App 的 `applicationId` 一致。SDK AAR 不内置 `google-services.json`，也不替业务 App 创建 Firebase 项目。
+
+#### R8 / ProGuard 混淆
+
+`nexus-growth-analytics-ad` AAR 已通过 `consumer-rules.pro` 携带 Nexus Provider 所需的元数据和类名规则，业务 App 启用 `minifyEnabled = true` 时会自动合并。Firebase、AdMob、AppsFlyer 和 DataEye 的 Maven 依赖也会分别携带并合并其官方消费端规则。
+
+业务方不应默认添加以下宽泛规则：
+
+```proguard
+-keep class com.google.** { *; }
+-keep class com.appsflyer.** { *; }
+-keep class cn.dataeye.** { *; }
+```
+
+这些规则会阻止大量无用代码缩减。只有第三方 SDK 官方文档针对当前版本明确要求额外规则，或 Release 混淆包出现可复现问题时，才应在业务 App 的 `proguard-rules.pro` 中补充对应的最小规则。使用本地 AAR 时，第三方 Maven 依赖仍必须按实际启用平台声明，否则其官方消费端规则也不会进入最终构建。
+
+#### AppsFlyer
+
+`appsflyerDevKey` 使用 AppsFlyer 后台当前 App 的 Dev Key，不要填写 Apple App ID、包名或 OneLink 地址。需要 OneLink/Deep Link 归因时，业务 App 还要在 AppsFlyer 后台配置 Android App，并在 Manifest 中配置对应的 App Links 或 intent-filter。
+
+#### DataEye
+
+`dataEyeAppId` 使用 DataEye 后台分配给当前 App 的 App ID。`dataEyeServerUrl` 为可选自定义上报地址，不传时使用 DataEye SDK 默认地址。DataEye 的 uid 来自 `GrowthAnalyticsAdSDK.setUser(user)`，因此建议在 CoreUser 登录成功后设置用户。
+
+#### AdMob
+
 如果启用 AdMob，业务 App 必须在自己的 `AndroidManifest.xml` 中配置 AdMob App ID。这个值属于宿主 App，不能由 SDK AAR 写死，否则多个业务 App 会共用错误的 AdMob 应用配置：
 
 ```xml
@@ -252,16 +320,6 @@ CoreUserSDK.consumeChatCoinsAsync(
         android:value="ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy" />
 </application>
 ```
-
-如果启用 Firebase，业务 App 需要按 Firebase 官方 Android 接入方式添加真实配置：
-
-- 将 Firebase Console 下载的 `google-services.json` 放到业务 App module。
-- 在业务 App 的 Gradle 配置中启用 Google Services 插件。
-- 使用和业务 App 包名匹配的 Firebase Android App 配置。
-
-SDK 不内置 `google-services.json`。
-
-如果启用 AppsFlyer，业务 App 需要提供自己的 Dev Key、App ID/包名相关配置，并在需要 OneLink/Deep Link 时配置对应的 intent-filter 或 App Links。
 
 ### 5.2 初始化
 ```kotlin
@@ -279,11 +337,22 @@ GrowthAnalyticsAdSDK.init(
         enableFirebase = true,
         enableAppsflyer = true,
         enableAdMob = true,
+        dataEyeAppId = "<DATAEYE_APP_ID>",
+        dataEyeServerUrl = null,
+        appsflyerDevKey = "<APPSFLYER_DEV_KEY>",
         debug = true
     ),
     activityProvider = { currentActivity }
 )
 ```
+
+配置检查：
+
+- 只启用 Firebase：`enableFirebase = true`，`enableBI = false`，`enableAppsflyer = false`。
+- 只启用 AppsFlyer：`enableAppsflyer = true` 并填写 `appsflyerDevKey`，其余事件平台开关设为 `false`。
+- 只启用 DataEye：`enableBI = true` 并填写 `dataEyeAppId`，其余事件平台开关设为 `false`。
+- 同时启用时，保留三个真实配置；`GrowthAnalyticsAdSDK.getProviders()` 可用于调试确认创建出的 Provider。
+- `debug = true` 只控制 Nexus SDK 日志，Firebase、AppsFlyer 和 DataEye 各自的调试模式仍按对应官方 SDK 配置。
 
 如果已接入 CoreUserSDK：
 
@@ -309,12 +378,12 @@ GrowthAnalyticsAdSDK.setUserProperties(
 )
 ```
 
-当前 Firebase 和 AppsFlyer 只按需求处理 `ad_impression`。
+广告收益由 AdMob Paid Event 触发 `reportAdRevenue()`。SDK 内部事件名是 `ad_revenue`，发送到 Firebase、AppsFlyer 和 DataEye 时均映射为 `ad_imp`。
 
 说明：
 
 - `GrowthAnalyticsAdSDK.track(...)` 可以分发普通事件到已注入或已启用的 Provider。
-- 当前按业务需求，Firebase / AppsFlyer 的正式字段映射重点只保证 `ad_impression`。
+- 当前按业务需求，Firebase / AppsFlyer 只发送 `ad_imp`，其它 Nexus 内部事件不会发送到这两个平台。
 - BI(DataEye) 按 Nexus/BI 事件模型上报。
 
 ### 5.4 Deep Link 和归因
@@ -388,10 +457,6 @@ PaymentSDK.showSubscriptionPage(
         paymentChannels = listOf(PaymentChannel.GOOGLE_PLAY),
         showPaymentChannel = true,
         showRestore = true,
-        showTerms = true,
-        showPrivacy = true,
-        termsUrl = "https://example.com/terms",
-        privacyUrl = "https://example.com/privacy",
         ctaText = "Continue"
     )
 )
@@ -399,7 +464,8 @@ PaymentSDK.showSubscriptionPage(
 
 打开订阅页后，SDK 会自动完成以下流程，业务方不需要提前获取商品或手动调用购买接口：
 
-- 从 Nexus 后台获取商品的 `market_product_id`、`product_type` 和 `coins_granted`。
+- 从 Nexus 后台获取商品的 `market_product_id`、`product_type` 和 `coins_granted`；`coinsGranted` 类型为 `Double?`，保留接口原始值并支持小数赠币。
+- 订阅页展示金币时统一使用 `coins_granted × 100`，例如接口返回 `20` 时页面展示 `2000`；购买判断和订单处理仍使用接口原始值。
 - 从 Google Play Billing 获取价格、币种、本地化价格、订阅周期和试用信息，并与后台商品合并。
 - 获取关联应用并展示 Membership Share 区域。
 - 用户点击 CTA 后发起购买，购买成功后完成服务端订单校验和权益处理。
@@ -408,11 +474,12 @@ PaymentSDK.showSubscriptionPage(
 - Google Play 订单校验在后台线程执行，成功后 SDK 会确认订阅/非消耗品，或消耗带 `coins_granted` 的金币商品。
 - App 启动时 SDK 会查询未完成订单，恢复 Pending 完成和进程重启期间遗漏的购买。
 - 权益和交付记录按 `productId + uid` 持久化，防止切换用户时串用权益或重复交付。
+- 服务条款和隐私协议默认展示，分别使用 `https://www.crypsiscollectiveinc.com/terms.html` 和 `https://www.crypsiscollectiveinc.com/privacy.html`；点击后由系统浏览器打开。
 
 校验规则：
 
-- `showTerms = true` 时 `termsUrl` 必填。
-- `showPrivacy = true` 时 `privacyUrl` 必填。
+- `showTerms`、`showPrivacy` 默认均为 `true`，业务方可显式设为 `false` 隐藏对应入口。
+- `termsUrl`、`privacyUrl` 已提供上述默认值；业务方可以覆盖，但入口开启时不能传空字符串。
 - 支付方式配置错误时不自动兜底。
 
 ## 7. CrossPromoSDK 接入
