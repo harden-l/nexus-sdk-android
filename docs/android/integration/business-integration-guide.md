@@ -1,15 +1,15 @@
 # Nexus SDK Android 业务接入说明
 本文面向接入 Nexus SDK 的业务 App。SDK按模块提供能力，可根据需求接入其中1个或多个模块。
 
-当前版本：`0.0.6`
+当前版本：`0.0.7`
 
 ## 1. 模块选择
 | 模块 | AAR | 适用场景 | 前置依赖 |
 | --- | --- | --- | --- |
-| CoreUserSDK | [nexus-core-user-0.0.6.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.6/nexus-core-user-0.0.6.aar) | 设备 ID、静默登录、用户信息、邮箱绑定、余额和金币 | 无 |
-| GrowthAnalyticsAdSDK | [nexus-growth-analytics-ad-0.0.6.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.6/nexus-growth-analytics-ad-0.0.6.aar) | BI/Firebase/AppsFlyer 事件、AdMob 广告、归因 | CoreUserSDK |
-| PaymentSDK | [nexus-payment-0.0.6.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.6/nexus-payment-0.0.6.aar) | 商品、订阅页、Google Play Billing、订单校验、权益 | CoreUserSDK、GrowthAnalyticsAdSDK |
-| CrossPromoSDK | [nexus-cross-promo-0.0.6.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.6/nexus-cross-promo-0.0.6.aar) | 应用互导推荐页、Deep Link、导量归因 | CoreUserSDK、GrowthAnalyticsAdSDK |
+| CoreUserSDK | [nexus-core-user-0.0.7.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.7/nexus-core-user-0.0.7.aar) | 设备 ID、静默登录、用户信息、邮箱绑定、余额和金币 | 无 |
+| GrowthAnalyticsAdSDK | [nexus-growth-analytics-ad-0.0.7.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.7/nexus-growth-analytics-ad-0.0.7.aar) | BI/Firebase/AppsFlyer 事件、AdMob 广告、归因 | CoreUserSDK |
+| PaymentSDK | [nexus-payment-0.0.7.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.7/nexus-payment-0.0.7.aar) | 商品、订阅页、Google Play Billing、订单校验、权益 | CoreUserSDK、GrowthAnalyticsAdSDK |
+| CrossPromoSDK | [nexus-cross-promo-0.0.7.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.7/nexus-cross-promo-0.0.7.aar) | 应用互导推荐页、Deep Link、导量归因 | CoreUserSDK、GrowthAnalyticsAdSDK |
 
 ## 2. 通用准备
 请按实际接入模块向后台或 SDK 提供方确认配置：
@@ -229,7 +229,7 @@ CoreUserSDK.fetchUserInfoAsync { result ->
 }
 ```
 
-`fetchUserInfoAsync()` 返回用户资料和当前余额 `balance`，并刷新 SDK 本地用户缓存。`SDKUser.balance` 类型为 `Double`，支持小数余额；业务方展示金币余额或扣金币后刷新余额时，可以读取返回的 `user.balance`。
+`fetchUserInfoAsync()` 返回用户资料和当前余额 `balance`，并刷新 SDK 本地用户缓存。SDK 会将用户信息接口返回的 `balance` 乘以 `100` 后写入 `SDKUser.balance`，例如接口返回 `20` 时业务方读取到 `2000`。`SDKUser.balance` 类型为 `Double`，支持小数余额。
 
 使用 SDK 内置邮箱绑定弹窗：
 
@@ -260,6 +260,7 @@ CoreUserSDK.consumeChatCoinsAsync(
 - SDK 会自动携带当前 uid；本地无用户时会先静默登录。
 - `cost` 必须大于 `0`，金币数使用 `Double`，避免小数被截断。
 - 该接口按 `CoreUserConfig.encrypt` 的通用策略加密请求和解密响应，不走登录接口免加密规则。
+- `ConsumeChatCoinsResult` 中的 `cost`、`beforeCoins`、`afterCoins` 和 `balance` 保持扣金币接口返回的原始单位，不执行 `×100`。
 - 扣除成功后 SDK 不直接修改本地 `SDKUser.balance` 缓存；业务方如需刷新余额，调用 `fetchUserInfoAsync()`。
 
 ## 5. GrowthAnalyticsAdSDK 接入
