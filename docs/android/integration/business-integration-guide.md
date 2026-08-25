@@ -1,15 +1,15 @@
 # Nexus SDK Android 业务接入说明
 本文面向接入 Nexus SDK 的业务 App。SDK按模块提供能力，可根据需求接入其中1个或多个模块。
 
-当前版本：`0.0.7`
+当前版本：`0.0.8`
 
 ## 1. 模块选择
 | 模块 | AAR | 适用场景 | 前置依赖 |
 | --- | --- | --- | --- |
-| CoreUserSDK | [nexus-core-user-0.0.7.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.7/nexus-core-user-0.0.7.aar) | 设备 ID、静默登录、用户信息、邮箱绑定、余额和金币 | 无 |
-| GrowthAnalyticsAdSDK | [nexus-growth-analytics-ad-0.0.7.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.7/nexus-growth-analytics-ad-0.0.7.aar) | BI/Firebase/AppsFlyer 事件、AdMob 广告、归因 | CoreUserSDK |
-| PaymentSDK | [nexus-payment-0.0.7.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.7/nexus-payment-0.0.7.aar) | 商品、订阅页、Google Play Billing、订单校验、权益 | CoreUserSDK、GrowthAnalyticsAdSDK |
-| CrossPromoSDK | [nexus-cross-promo-0.0.7.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.7/nexus-cross-promo-0.0.7.aar) | 应用互导推荐页、Deep Link、导量归因 | CoreUserSDK、GrowthAnalyticsAdSDK |
+| CoreUserSDK | [nexus-core-user-0.0.8.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.8/nexus-core-user-0.0.8.aar) | 设备 ID、游客登录、邮箱密码登录、用户信息、邮箱绑定、余额和金币 | 无 |
+| GrowthAnalyticsAdSDK | [nexus-growth-analytics-ad-0.0.8.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.8/nexus-growth-analytics-ad-0.0.8.aar) | BI/Firebase/AppsFlyer 事件、AdMob 广告、归因 | CoreUserSDK |
+| PaymentSDK | [nexus-payment-0.0.8.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.8/nexus-payment-0.0.8.aar) | 商品、三套订阅页模板、Google Play Billing、订单校验、权益 | CoreUserSDK、GrowthAnalyticsAdSDK |
+| CrossPromoSDK | [nexus-cross-promo-0.0.8.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.8/nexus-cross-promo-0.0.8.aar) | 应用互导推荐页、Deep Link、导量归因 | CoreUserSDK、GrowthAnalyticsAdSDK |
 
 ## 2. 通用准备
 请按实际接入模块向后台或 SDK 提供方确认配置：
@@ -149,6 +149,15 @@ CoreUserSDK.init(
 | `gt` | 否 | 登录注册赠送梯度码：`1` 赠送 10，`2` 赠送 20，`3` 赠送 30，其它值不赠送；不传时登录请求不携带。仅本次首次创建用户且新建共享钱包时生效 |
 
 ### 4.2 登录
+
+推荐账号流程：
+
+1. 用户未主动选择邮箱登录时，调用 `silentLoginAsync()` 创建或恢复游客用户。
+2. 游客登录成功后根据 `SDKUser.emailBound` 决定是否展示绑定入口；登录本身不会强制弹出绑定页面。
+3. 绑定邮箱时必须同时设置密码。绑定成功后，邮箱成为当前 UID 的登录凭证。
+4. 用户在新设备、重装 App 或其他接入同一账号体系的 App 中主动登录时，直接调用 `loginWithEmailAsync()`，不要先创建新的游客用户。
+5. 邮箱登录成功后 SDK 会自动拉取用户信息，业务方使用返回的 `SDKUser` 更新登录态。
+
 ```kotlin
 CoreUserSDK.silentLoginAsync { result ->
     result.onSuccess { user ->
@@ -164,23 +173,30 @@ CoreUserSDK.silentLoginAsync { result ->
 }
 ```
 
-登录类型：
+游客登录也可以在后台线程使用同步 API：
 
 ```kotlin
-import com.nexus.sdk.coreuser.silent_login.LoginType
-
-val user = CoreUserSDK.silentLogin(LoginType.GUEST)
+val user = CoreUserSDK.silentLogin()
 ```
 
-当前枚举值：
+邮箱密码登录：
 
-- `LoginType.GUEST`
-- `LoginType.EMAIL`
-- `LoginType.PHONE`
+```kotlin
+CoreUserSDK.loginWithEmailAsync(
+    email = "user@example.com",
+    password = "user-password"
+) { result ->
+    result.onSuccess { user ->
+        // 邮箱登录成功
+    }.onFailure { error ->
+        // 邮箱或密码错误
+    }
+}
+```
 
-默认使用 `LoginType.GUEST`。登录请求会携带本地已有 uid；首次登录时 uid 为空字符串。
+`email` 和 `password` 均为必填。同步 API 为 `loginWithEmail(email, password)`，只能在后台线程调用。登录请求会携带本地已有 uid；本地没有 uid 时发送空字符串，服务端根据邮箱密码恢复对应用户。
 
-登录后SDK会拉取一次用户信息。
+登录后 SDK 会拉取一次用户信息。密码只用于当前绑定或登录请求，SDK 不会持久化密码；debug 日志中的密码会被脱敏。
 
 ### 4.3 获取登录动态配置
 ```kotlin
@@ -236,6 +252,21 @@ CoreUserSDK.fetchUserInfoAsync { result ->
 ```kotlin
 CoreUserSDK.ensureEmailBound(activity) { result ->
     // ALREADY_BOUND / BOUND / CANCELLED / USER_INFO_FAILED / BIND_FAILED
+}
+```
+
+弹窗会同时要求用户输入邮箱和密码。密码用于设置邮箱登录凭证，绑定成功后可调用 `loginWithEmail()` 登录；SDK 不会在本地持久化密码。
+
+调用绑定接口前应先完成游客登录或其他类型登录，确保 SDK 中存在当前用户 UID。同一邮箱只能按服务端账号规则绑定；邮箱已被占用、密码不符合规则等情况会通过失败结果返回，业务方应向用户展示可理解的错误提示。
+
+使用自定义 UI 直接绑定：
+
+```kotlin
+CoreUserSDK.bindEmailAsync(
+    email = "user@example.com",
+    password = "user-password"
+) { result ->
+    // 处理绑定结果
 }
 ```
 
@@ -443,11 +474,13 @@ PaymentSDK.init(
 ### 6.2 订阅页
 ```kotlin
 import com.nexus.sdk.payment.subscription_template.SubscriptionPageConfig
+import com.nexus.sdk.payment.subscription_template.SubscriptionPageTemplates
 import com.nexus.sdk.payment.subscription_template.SubscriptionSharedAppsConfig
 
 PaymentSDK.showSubscriptionPage(
     activity,
     SubscriptionPageConfig(
+        templateId = SubscriptionPageTemplates.AURORA,
         title = "Upgrade to Pro",
         benefitDescription = "Purchase one product and share membership benefits.",
         benefits = listOf("Unlimited usage", "Remove ads"),
@@ -463,15 +496,27 @@ PaymentSDK.showSubscriptionPage(
 )
 ```
 
+`templateId` 用于切换 SDK 内置页面模板：
+
+| 模板 ID | 常量 | 模板说明 |
+| --- | --- | --- |
+| `aurora` | `SubscriptionPageTemplates.AURORA` | 明亮现代风格，突出当前权益、共享应用和购买选项；默认模板。 |
+| `midnight` | `SubscriptionPageTemplates.MIDNIGHT` | 深色沉浸风格，适合会员、内容和创作类产品。 |
+| `minimal` | `SubscriptionPageTemplates.MINIMAL` | 清爽紧凑风格，适合工具类应用或商品较多的页面。 |
+
+未传、传空值或传入未知模板 ID 时会回退到 `aurora`。Android 与 iOS 使用相同模板 ID，业务方可直接由远程配置控制两端样式。
+
+切换模板只需要修改 `templateId`，其余页面配置和调用方式不变。
+
 打开订阅页后，SDK 会自动完成以下流程，业务方不需要提前获取商品或手动调用购买接口：
 
-- 从 Nexus 后台获取商品的 `market_product_id`、`product_type` 和 `coins_granted`；`coinsGranted` 类型为 `Double?`，保留接口原始值并支持小数赠币。
+- 从 Nexus 后台 `/m/v6/iap/list` 获取商品的 `market_product_id`、`product_type` 和 `coins_granted`；`coinsGranted` 类型为 `Double?`，保留接口原始值并支持小数赠币。
+- 页面按 `product_type` 自动分组：`2` 展示为订阅方案，`1` 展示为积分包或一次性内购。
 - 订阅页展示金币时统一使用 `coins_granted × 100`，例如接口返回 `20` 时页面展示 `2000`；购买判断和订单处理仍使用接口原始值。
 - 从 Google Play Billing 获取价格、币种、本地化价格、订阅周期和试用信息，并与后台商品合并。
 - 获取关联应用并展示 Membership Share 区域。
 - 用户点击 CTA 后发起购买，购买成功后完成服务端订单校验和权益处理。
 - `showRestore = true` 时由页面提供恢复入口并执行恢复流程。
-- 订阅页只展示同时存在于 Nexus 商品接口和 Google Play Billing 的商品；后台配置错误或商店不存在的商品不会展示。
 - Google Play 订单校验在后台线程执行，成功后 SDK 会确认订阅/非消耗品，或消耗带 `coins_granted` 的金币商品。
 - App 启动时 SDK 会查询未完成订单，恢复 Pending 完成和进程重启期间遗漏的购买。
 - 权益和交付记录按 `productId + uid` 持久化，防止切换用户时串用权益或重复交付。
