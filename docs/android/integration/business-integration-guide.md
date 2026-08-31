@@ -1,15 +1,15 @@
 # Nexus SDK Android 业务接入说明
 本文面向接入 Nexus SDK 的业务 App。SDK按模块提供能力，可根据需求接入其中1个或多个模块。
 
-当前版本：`0.0.8`
+当前版本：`0.0.12`
 
 ## 1. 模块选择
 | 模块 | AAR | 适用场景 | 前置依赖 |
 | --- | --- | --- | --- |
-| CoreUserSDK | [nexus-core-user-0.0.8.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.8/nexus-core-user-0.0.8.aar) | 设备 ID、游客登录、邮箱密码登录、用户信息、邮箱绑定、余额和金币 | 无 |
-| GrowthAnalyticsAdSDK | [nexus-growth-analytics-ad-0.0.8.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.8/nexus-growth-analytics-ad-0.0.8.aar) | BI/Firebase/AppsFlyer 事件、AdMob 广告、归因 | CoreUserSDK |
-| PaymentSDK | [nexus-payment-0.0.8.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.8/nexus-payment-0.0.8.aar) | 商品、三套订阅页模板、Google Play Billing、订单校验、权益 | CoreUserSDK、GrowthAnalyticsAdSDK |
-| CrossPromoSDK | [nexus-cross-promo-0.0.8.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.8/nexus-cross-promo-0.0.8.aar) | 应用互导推荐页、Deep Link、导量归因 | CoreUserSDK、GrowthAnalyticsAdSDK |
+| CoreUserSDK | [nexus-core-user-0.0.12.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.12/nexus-core-user-0.0.12.aar) | 设备 ID、游客登录、邮箱密码登录、用户信息、邮箱绑定、余额和金币 | 无 |
+| GrowthAnalyticsAdSDK | [nexus-growth-analytics-ad-0.0.12.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.12/nexus-growth-analytics-ad-0.0.12.aar) | BI/Firebase/AppsFlyer 事件、AdMob 广告、归因 | CoreUserSDK |
+| PaymentSDK | [nexus-payment-0.0.12.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.12/nexus-payment-0.0.12.aar) | 商品、三套订阅页模板、Google Play Billing、订单校验、权益 | CoreUserSDK、GrowthAnalyticsAdSDK |
+| CrossPromoSDK | [nexus-cross-promo-0.0.12.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.12/nexus-cross-promo-0.0.12.aar) | 应用互导推荐页、Deep Link、导量归因 | CoreUserSDK、GrowthAnalyticsAdSDK |
 
 ## 2. 通用准备
 请按实际接入模块向后台或 SDK 提供方确认配置：
