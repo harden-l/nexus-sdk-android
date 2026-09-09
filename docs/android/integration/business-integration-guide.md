@@ -1,15 +1,15 @@
 # Nexus SDK Android 业务接入说明
 本文面向接入 Nexus SDK 的业务 App。SDK按模块提供能力，可根据需求接入其中1个或多个模块。
 
-当前版本：`0.0.12`
+当前版本：`0.0.15`
 
 ## 1. 模块选择
 | 模块 | AAR | 适用场景 | 前置依赖 |
 | --- | --- | --- | --- |
-| CoreUserSDK | [nexus-core-user-0.0.12.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.12/nexus-core-user-0.0.12.aar) | 设备 ID、游客登录、邮箱密码登录、用户信息、邮箱绑定、余额和金币 | 无 |
-| GrowthAnalyticsAdSDK | [nexus-growth-analytics-ad-0.0.12.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.12/nexus-growth-analytics-ad-0.0.12.aar) | BI/Firebase/AppsFlyer 事件、AdMob 广告、归因 | CoreUserSDK |
-| PaymentSDK | [nexus-payment-0.0.12.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.12/nexus-payment-0.0.12.aar) | 商品、三套订阅页模板、Google Play Billing、订单校验、权益 | CoreUserSDK、GrowthAnalyticsAdSDK |
-| CrossPromoSDK | [nexus-cross-promo-0.0.12.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.12/nexus-cross-promo-0.0.12.aar) | 应用互导推荐页、Deep Link、导量归因 | CoreUserSDK、GrowthAnalyticsAdSDK |
+| CoreUserSDK | [nexus-core-user-0.0.15.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.15/nexus-core-user-0.0.15.aar) | 设备 ID、游客登录、邮箱密码登录、用户信息、邮箱绑定、余额和金币 | 无 |
+| GrowthAnalyticsAdSDK | [nexus-growth-analytics-ad-0.0.15.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.15/nexus-growth-analytics-ad-0.0.15.aar) | BI/Firebase/AppsFlyer 事件、AdMob 广告、归因 | CoreUserSDK |
+| PaymentSDK | [nexus-payment-0.0.15.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.15/nexus-payment-0.0.15.aar) | 商品、三套订阅页模板、Google Play Billing、订单校验、权益 | CoreUserSDK；GrowthAnalyticsAdSDK 仅事件上报需要 |
+| CrossPromoSDK | [nexus-cross-promo-0.0.15.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.15/nexus-cross-promo-0.0.15.aar) | 应用互导推荐页、Deep Link、导量归因 | CoreUserSDK、GrowthAnalyticsAdSDK |
 
 ## 2. 通用准备
 请按实际接入模块向后台或 SDK 提供方确认配置：
@@ -73,6 +73,8 @@ dependencies {
 ```
 
 只接入 CoreUserSDK 时无需添加上述第三方依赖。接入 PaymentSDK 或 CrossPromoSDK 时，必须同时添加其前置 AAR。
+
+`PaymentSDK.init(...)` 不会初始化 `GrowthAnalyticsAdSDK`。宿主 App 已主动初始化 Growth 时，PaymentSDK 会复用它上报支付和订阅页事件；未初始化时跳过这些事件上报，不影响商品加载、订阅页展示和购买流程。
 
 启用 Firebase 时，还需要在业务工程根 Gradle 配置中声明 Google Services 插件版本：
 
@@ -198,42 +200,7 @@ CoreUserSDK.loginWithEmailAsync(
 
 登录后 SDK 会拉取一次用户信息。密码只用于当前绑定或登录请求，SDK 不会持久化密码；debug 日志中的密码会被脱敏。
 
-### 4.3 获取登录动态配置
-```kotlin
-val loginConfig = CoreUserSDK.getConfig()
-```
-
-`getConfig()` 返回最近一次登录接口响应中除 `uid` 之外的动态配置字段，类型为 `Map<String, Any?>`。登录接口返回字段是不固定的，SDK 不会为这些字段定义固定模型，业务方按后台配置约定读取即可。
-
-```kotlin
-CoreUserSDK.silentLoginAsync { result ->
-    result.onSuccess {
-        val config = CoreUserSDK.getConfig()
-        val example = config["example"]
-    }
-}
-```
-
-说明：
-
-- 首次登录成功前调用时可能返回空 Map。
-- `logout()` 会先注销服务端用户，成功后清空本地登录动态配置和用户资料缓存，但保留 uid，下一次登录请求仍会携带该 uid。
-- `getConfig()` 返回的是登录动态配置，不是用户资料。
-
-退出登录示例：
-
-```kotlin
-CoreUserSDK.logoutAsync { result ->
-    if (result.isSuccess) {
-        // 退出成功
-    } else {
-        val error = result.exceptionOrNull()
-        // 注销接口失败，本地用户缓存不会被清理
-    }
-}
-```
-
-### 4.4 用户信息和邮箱绑定
+### 4.3 获取用户信息
 ```kotlin
 CoreUserSDK.fetchUserInfoAsync { result ->
     result.onSuccess { user ->
@@ -246,6 +213,8 @@ CoreUserSDK.fetchUserInfoAsync { result ->
 ```
 
 `fetchUserInfoAsync()` 返回用户资料和当前余额 `balance`，并刷新 SDK 本地用户缓存。SDK 会将用户信息接口返回的 `balance` 乘以 `100` 后写入 `SDKUser.balance`，例如接口返回 `20` 时业务方读取到 `2000`。`SDKUser.balance` 类型为 `Double`，支持小数余额。
+
+### 4.4 绑定邮箱
 
 使用 SDK 内置邮箱绑定弹窗：
 
@@ -270,7 +239,22 @@ CoreUserSDK.bindEmailAsync(
 }
 ```
 
-### 4.5 扣除聊天金币
+### 4.5 获取开关动态配置
+```kotlin
+CoreUserSDK.init(context, coreUserConfig)
+
+// 初始化完成后即可直接调用，回调在主线程执行
+CoreUserSDK.fetchSwitchConfigAsync { result ->
+    result.onSuccess { rawConfig ->
+        // rawConfig 是服务端返回的原始 JSON 字符串
+        // 业务方按自己的配置协议解析和使用
+    }
+}
+```
+
+开关接口为 `POST /`，固定不加密。SDK 不将动态字段转换成固定模型或 `Map`，只返回解密后的原始 JSON 字符串；最近一次成功结果也可通过 `CoreUserSDK.getSwitchConfig()` 读取。业务方也可以在非主线程调用同步方法 `fetchSwitchConfig()`。
+
+### 4.6 扣除聊天金币
 ```kotlin
 CoreUserSDK.consumeChatCoinsAsync(
     cost = 2.5,
@@ -293,6 +277,17 @@ CoreUserSDK.consumeChatCoinsAsync(
 - 该接口按 `CoreUserConfig.encrypt` 的通用策略加密请求和解密响应，不走登录接口免加密规则。
 - `ConsumeChatCoinsResult` 中的 `cost`、`beforeCoins`、`afterCoins` 和 `balance` 保持扣金币接口返回的原始单位，不执行 `×100`。
 - 扣除成功后 SDK 不直接修改本地 `SDKUser.balance` 缓存；业务方如需刷新余额，调用 `fetchUserInfoAsync()`。
+
+### 4.7 用户注销
+```kotlin
+CoreUserSDK.logoutAsync { result ->
+    if (result.isSuccess) {
+        // 服务端注销成功，本地用户资料和开关配置已清理，uid 保留
+    }
+}
+```
+
+SDK 调用 `POST /m/v7/deregister`。接口失败时不会清理本地会话；成功后清理用户资料、登录配置和开关配置，但保留 uid。
 
 ## 5. GrowthAnalyticsAdSDK 接入
 ### 5.1 第三方平台配置
@@ -456,7 +451,19 @@ GrowthAnalyticsAdSDK.showAd(interstitial)
 `showAd()` 会先检查缓存：有缓存时立即展示；无缓存时自动开始加载，本次通过 `onFailed` 返回广告未就绪，业务方可在后续时机再次调用 `showAd()`。开屏、插屏和激励广告展示成功或展示失败后，SDK 会自动预加载下一条。同一广告正在展示时不会重复展示。
 
 ## 6. PaymentSDK 接入
-### 6.1 初始化
+`PaymentSDK` 只负责支付与订阅能力。业务方不需要自行请求商品列表、拼装订阅页或手动处理订单校验；页面会根据配置自动完成商品加载、商店信息合并、购买、恢复和权益交付。
+
+### 6.1 接入顺序
+
+按以下顺序接入：
+
+1. 初始化 `CoreUserSDK`。
+2. 初始化 `PaymentSDK`。
+3. 在需要展示订阅入口时调用 `showSubscriptionPage(...)`。
+4. 监听 `PaymentSDK` 事件，按业务需要刷新会员状态或余额。
+
+### 6.2 初始化
+
 ```kotlin
 CoreUserSDK.init(context, coreUserConfig)
 
@@ -471,7 +478,7 @@ PaymentSDK.init(
 
 注意：`PaymentSDK.init(...)` 内部会读取 `CoreUserSDK.getSdkConfig()`，所以必须先初始化 CoreUserSDK。
 
-### 6.2 订阅页
+### 6.3 展示订阅页
 ```kotlin
 import com.nexus.sdk.payment.subscription_template.SubscriptionPageConfig
 import com.nexus.sdk.payment.subscription_template.SubscriptionPageTemplates
@@ -508,13 +515,33 @@ PaymentSDK.showSubscriptionPage(
 
 切换模板只需要修改 `templateId`，其余页面配置和调用方式不变。
 
+`SubscriptionPageConfig` 参数：
+
+| 参数 | 说明 |
+| --- | --- |
+| `templateId` | 页面模板：`aurora`、`midnight`、`minimal`。 |
+| `title` | 页面标题。 |
+| `benefitDescription` | 当前产品权益描述。 |
+| `benefits` | 权益字符串数组，按标签展示。 |
+| `sharedApps` | 共享应用区域配置。 |
+| `paymentChannels` | 支付渠道列表。 |
+| `showPaymentChannel` | 是否展示支付渠道选择。 |
+| `showRestore` | 是否展示恢复购买入口。 |
+| `termsUrl` / `privacyUrl` | 服务条款和隐私协议地址；对应入口开启时不能为空。 |
+| `showTerms` / `showPrivacy` | 是否展示对应协议入口，默认均为 `true`。 |
+| `ctaText` | 购买按钮文案。 |
+| `restoreText` / `termsText` / `privacyText` | 底部入口文案，默认分别为 `Restore`、`Terms`、`Privacy`。 |
+
+### 6.4 页面自动处理流程
+
 打开订阅页后，SDK 会自动完成以下流程，业务方不需要提前获取商品或手动调用购买接口：
 
-- 从 Nexus 后台 `/m/v6/iap/list` 获取商品的 `market_product_id`、`product_type` 和 `coins_granted`；`coinsGranted` 类型为 `Double?`，保留接口原始值并支持小数赠币。
+- 从 Nexus 后台 `/m/v7/iap/list` 获取商品的 `market_product_id`、`product_type`、`coins_granted`、`weekly_points_enabled` 和 `weekly_points`；`coinsGranted` 类型为 `Double?`，保留接口原始值并支持小数赠币。
 - 页面按 `product_type` 自动分组：`2` 展示为订阅方案，`1` 展示为积分包或一次性内购。
 - 订阅页展示金币时统一使用 `coins_granted × 100`，例如接口返回 `20` 时页面展示 `2000`；购买判断和订单处理仍使用接口原始值。
 - 从 Google Play Billing 获取价格、币种、本地化价格、订阅周期和试用信息，并与后台商品合并。
 - 获取关联应用并展示 Membership Share 区域。
+- 对已订阅商品显示已拥有标识；开启每周积分的订阅商品显示积分领取入口。业务方也可直接调用 `CoreUserSDK.getWeeklyPointsInfo()` 查询领取状态，并在 `canClaim` 为 `true` 时调用 `CoreUserSDK.claimWeeklyPoints(marketProductId)`；领取成功后调用 `fetchUserInfoAsync()` 刷新余额。
 - 用户点击 CTA 后发起购买，购买成功后完成服务端订单校验和权益处理。
 - `showRestore = true` 时由页面提供恢复入口并执行恢复流程。
 - Google Play 订单校验在后台线程执行，成功后 SDK 会确认订阅/非消耗品，或消耗带 `coins_granted` 的金币商品。
@@ -522,7 +549,7 @@ PaymentSDK.showSubscriptionPage(
 - 权益和交付记录按 `productId + uid` 持久化，防止切换用户时串用权益或重复交付。
 - 服务条款和隐私协议默认展示，分别使用 `https://www.crypsiscollectiveinc.com/terms.html` 和 `https://www.crypsiscollectiveinc.com/privacy.html`；点击后由系统浏览器打开。
 
-校验规则：
+### 6.5 配置校验与业务注意事项
 
 - `showTerms`、`showPrivacy` 默认均为 `true`，业务方可显式设为 `false` 隐藏对应入口。
 - `termsUrl`、`privacyUrl` 已提供上述默认值；业务方可以覆盖，但入口开启时不能传空字符串。
