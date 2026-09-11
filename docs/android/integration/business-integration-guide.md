@@ -1,15 +1,15 @@
 # Nexus SDK Android 业务接入说明
 本文面向接入 Nexus SDK 的业务 App。SDK按模块提供能力，可根据需求接入其中1个或多个模块。
 
-当前版本：`0.0.15`
+当前版本：`0.0.16`
 
 ## 1. 模块选择
 | 模块 | AAR | 适用场景 | 前置依赖 |
 | --- | --- | --- | --- |
-| CoreUserSDK | [nexus-core-user-0.0.15.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.15/nexus-core-user-0.0.15.aar) | 设备 ID、游客登录、邮箱密码登录、用户信息、邮箱绑定、余额和金币 | 无 |
-| GrowthAnalyticsAdSDK | [nexus-growth-analytics-ad-0.0.15.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.15/nexus-growth-analytics-ad-0.0.15.aar) | BI/Firebase/AppsFlyer 事件、AdMob 广告、归因 | CoreUserSDK |
-| PaymentSDK | [nexus-payment-0.0.15.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.15/nexus-payment-0.0.15.aar) | 商品、三套订阅页模板、Google Play Billing、订单校验、权益 | CoreUserSDK；GrowthAnalyticsAdSDK 仅事件上报需要 |
-| CrossPromoSDK | [nexus-cross-promo-0.0.15.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.15/nexus-cross-promo-0.0.15.aar) | 应用互导推荐页、Deep Link、导量归因 | CoreUserSDK、GrowthAnalyticsAdSDK |
+| CoreUserSDK | [nexus-core-user-0.0.16.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.16/nexus-core-user-0.0.16.aar) | 设备 ID、游客登录、邮箱密码登录、用户信息、邮箱绑定、余额和金币 | 无 |
+| GrowthAnalyticsAdSDK | [nexus-growth-analytics-ad-0.0.16.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.16/nexus-growth-analytics-ad-0.0.16.aar) | BI/Firebase/AppsFlyer 事件、AdMob 广告、归因 | CoreUserSDK |
+| PaymentSDK | [nexus-payment-0.0.16.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.16/nexus-payment-0.0.16.aar) | 商品、三套订阅页模板、Google Play Billing、订单校验、权益 | CoreUserSDK；GrowthAnalyticsAdSDK 仅事件上报需要 |
+| CrossPromoSDK | [nexus-cross-promo-0.0.16.aar](https://raw.githubusercontent.com/harden-l/nexus-sdk-android/main/dist/android/aar/0.0.16/nexus-cross-promo-0.0.16.aar) | 应用互导推荐页、Deep Link、导量归因 | CoreUserSDK、GrowthAnalyticsAdSDK |
 
 ## 2. 通用准备
 请按实际接入模块向后台或 SDK 提供方确认配置：
@@ -444,11 +444,14 @@ GrowthAnalyticsAdSDK.showAd(interstitial)
 - `BANNER`
 - `INTERSTITIAL`
 - `REWARDED`
+- `REWARDED_INTERSTITIAL`
 - `NATIVE`
 
 全屏广告按 `format + adUnitId` 管理缓存。重复调用 `loadAd()` 时，如果已有缓存或正在加载，SDK 不会再次发起广告请求；并发传入的加载回调会在本次加载完成后统一返回。
 
 `showAd()` 会先检查缓存：有缓存时立即展示；无缓存时自动开始加载，本次通过 `onFailed` 返回广告未就绪，业务方可在后续时机再次调用 `showAd()`。开屏、插屏和激励广告展示成功或展示失败后，SDK 会自动预加载下一条。同一广告正在展示时不会重复展示。
+
+`ad_show` 只在广告实际展示成功后上报：开屏、插屏、激励和激励插屏对应 AdMob 的 `onAdShowedFullScreenContent()`，Banner 和 Native 对应广告曝光回调。仅调用 `showAd()`、广告未就绪、加载失败或展示失败时不会上报 `ad_show`。
 
 ## 6. PaymentSDK 接入
 `PaymentSDK` 只负责支付与订阅能力。业务方不需要自行请求商品列表、拼装订阅页或手动处理订单校验；页面会根据配置自动完成商品加载、商店信息合并、购买、恢复和权益交付。
