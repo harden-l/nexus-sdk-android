@@ -715,7 +715,7 @@ PaymentSDK.showSubscriptionPage(
 
 - 请求 `/api/v1/iap/products`，按 `sort` 稳定排序，并区分订阅方案与一次性积分包。
 - 先展示后台返回的商品权益，再合并 Billing 返回的本地化价格、币种、周期和试用信息。后台 `price_usd` 只作为标注 USD 的参考价格；未获取商店详情前不能购买。
-- 新版 `weekly_points_enabled = 1` 表示按周领取，展示 `weeklyPointsDecimal ×100`；`2` 表示关闭周领，展示 `coinsGrantedDecimal ×100` 的购买到账权益。SDK 的 `weeklyPointsEnabled` 已映射为 Boolean。
+- `coins_granted` 是购买成功后直接发放的积分；`weekly_points` 是开启周积分后额外可领取的每周额度，两项独立。三个模板始终展示有效的购买到账积分；`weekly_points_enabled = 1` 时同时展示额外周积分，`2` 时不展示周积分。两项展示分别使用 `coinsGrantedDecimal ×100`、`weeklyPointsDecimal ×100`，各转换一次。SDK 的 `weeklyPointsEnabled` 已映射为 Boolean。
 - 查询当前用户的周积分领取资格，使用资格响应中的额度。无订阅时可显示订阅引导；已领取或未配置时不允许再次领取。领取成功后刷新用户资料和领取状态。
 - 获取关联应用，显示当前企业账号下的应用信息；区域不承诺共享会员权益。
 - 依据当前会员、订阅资格和本地已校验权益显示已拥有标识。消耗型金币包通常允许重复购买；已拥有标识不能代替商店和服务端最终判断。

@@ -2,6 +2,14 @@
 
 Date: 2026-10-13. This release updates Android only; iOS and provider releases are unchanged.
 
+## Same-version update (2026-10-15)
+
+- Rebuilt Payment AAR as `0.1.0`. Upfront `coins_granted` and additional enabled `weekly_points` are now both shown in Aurora, Midnight and Minimal, each scaled by100 once.
+- CoreUser, GrowthAnalyticsAd and CrossPromo AARs are byte-for-byte unchanged.
+- Replace any previously downloaded Payment0.1.0 AAR. New SHA256: `a8730379b18203603b8c95def4dafd10d82437b54b260cdf48be50b47c6a3760`.
+- The `0.1.0` tag is refreshed for this explicitly requested same-version update; the previous release remains in Git history at `7d9357c14837311db821f34d42fcac5eb0426b84`.
+- Payment unit tests and an AAR-backed Debug Demo build passed. Android Pixel10 and iOS iPhone17Pro simulator checks confirmed all three templates display125 upfront credits plus37.5 weekly points for raw values1.25 and0.375. Android also verified claim balance refresh1212.5 ->1250. These are fixture checks, not real store purchases.
+
 ## Included artifacts
 
 CoreUser, GrowthAnalyticsAd, Payment and CrossPromo AARs all report version `0.1.0`. Download from [dist/android/aar/0.1.0](dist/android/aar/0.1.0); verify using its `SHA256SUMS` file.
